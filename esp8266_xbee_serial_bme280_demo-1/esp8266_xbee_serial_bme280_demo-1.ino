@@ -141,7 +141,7 @@ void process() {
 
    read_sensor();
    send_data();
-   delay(300);
+   delay(400);
 
 #ifdef XBEE_SLEEP_PIN
    digitalWrite( XBEE_SLEEP_PIN, HIGH ); // send a SLEEP request to XBee
@@ -155,8 +155,6 @@ void setup() {
   pinMode( XBEE_SLEEP_PIN, OUTPUT );
   digitalWrite( XBEE_SLEEP_PIN, LOW );
 #endif 
-  
-  xbeeSerial.begin( 9600 );
 
 #ifdef DEBUG
   Serial.begin( 115200 );
@@ -164,11 +162,15 @@ void setup() {
   Serial.flush();
 #endif
 
+  xbeeSerial.begin( 9600 );
+  xbeeSerial.flush();
+  delay(10);
+  
   struct rst_info * info = ESP.getResetInfoPtr();
   if ( info->reason != REASON_DEEP_SLEEP_AWAKE ) {
-     for ( int i=0; i < 10; i++ ) {
+     for ( int i=10; i > 0; i-- ) {
 #ifdef DEBUG
-        Serial.println( '.' );
+        Serial.printf( "Count down: %d\n", i );
 #endif
         delay(1000);
      }
@@ -181,7 +183,7 @@ void setup() {
         Serial.flush();
 #endif
         read_sensor();
-        delay(100);
+        delay(10);
      }
      process();
   } 
