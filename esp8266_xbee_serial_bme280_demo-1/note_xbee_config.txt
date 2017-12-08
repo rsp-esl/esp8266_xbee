@@ -1,0 +1,16 @@
+Sample Configuratio for XBee Router (AT mode)
+
+- SH:SL = 13A200 : 40AF5976
+- 16-bit Network Address: DC9B
+- ID PAN ID = 9999
+- ZS ZigBee Stack Profile: 0
+- OP Operating PAN ID: 9999
+- OI Operating 16-bit PAN ID: DC9B
+- PL Power Level: Highest [4]
+- BD Baudrate: 9600
+- SM Sleep Mode: No Sleep (Router) [0]
+- SN Number of Cyclic Sleep Periods : 780
+- SO Sleep Options: 0
+- SP Cyclic Sleep Period: 5DC (hex) x 10ms
+- ST Time before Sleep: 1338 (hex) x 1ms
+
