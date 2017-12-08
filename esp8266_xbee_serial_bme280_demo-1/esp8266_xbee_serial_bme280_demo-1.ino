@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 // Author: Rawat S. (Department of Electrical & Computer Engineering, KMUTNB, Thailand
-// Date: 2017-11-29
+// Date: 2017-12-07
 // Description:
 //    This sketch is written for ESP8266. It shows how to 
-//    - program the ESP8266 to operate in deep-sleep mode (60-second sleep interval), 
+//    - program the ESP8266 to operate in deep-sleep mode with periodic wake-up, 
 //    - use the SoftwareSerial library to create a soft serial port 
 //      in order to communicate with the Xbee module (baudrate 9600),
 //    - read the data from the BME280 sensor module via the I2C bus,
@@ -30,7 +30,7 @@ extern "C" {
 #include "BME280.h"
 
 // Define your the name of your XBee device
-#define XBEE_DEV_NAME  "router2"
+#define XBEE_DEV_NAME  "router1"
 
 #define DEBUG
 
@@ -38,21 +38,21 @@ extern "C" {
 // to the A0 pin, you can uncomment the following line.
 #define READ_VBATT
 
-#define ONE_USEC        (1000000UL)
+#define ONE_SEC         (1000000UL)
 #define ONE_MSEC        (1000)
 
-#define SLEEP_SEC       (60 * ONE_USEC) 
+#define SLEEP_SEC       (15 * ONE_SEC) 
 
 #define BME280_ADDR     (0x76)
 
-#define SDA_PIN         (D4)    // D4 pin (GPIO-2)
-#define SCL_PIN         (D3)    // D3 pin (GPIO-0)
+#define SCL_PIN         (D1) 
+#define SDA_PIN         (D2)
+
+#define TX_PIN          (D6)
+#define RX_PIN          (D7) 
 
 // If you want to have a SLEEP request pin for XBee (for XBee end device)
-//#define XBEE_SLEEP_PIN  (D7)   // D7 pin (GPIO-13)
-
-#define TX_PIN          (D1)   // D1 pin (GPIO-5)
-#define RX_PIN          (D2)   // D2 pin (GPIO-4)
+//#define XBEE_SLEEP_PIN  (D8)   // D8 pin
 
 // see: https://www.arduino.cc/en/Reference/SoftwareSerial
 SoftwareSerial xbeeSerial( RX_PIN, TX_PIN );
@@ -128,6 +128,12 @@ void send_data() {
   str += "}";
   xbeeSerial.println( str.c_str() );
   xbeeSerial.flush();
+
+#ifdef DEBUG
+  Serial.println( str.c_str() );
+  Serial.flush();
+#endif
+
 }
 
 void process() {
@@ -148,7 +154,7 @@ void process() {
 #endif 
 }
 
-void setup() {  
+void setup() { 
   wifi_off(); // disable WiFi
 
 #ifdef XBEE_SLEEP_PIN  
@@ -158,8 +164,10 @@ void setup() {
 
 #ifdef DEBUG
   Serial.begin( 115200 );
-  Serial.println( "\n\n\n" );
+  Serial.println( F("\n\n\n\n") );
   Serial.flush();
+  delay(10);
+  Serial.printf( "Analog value: %d\n", analogRead( A0 ) );
 #endif
 
   xbeeSerial.begin( 9600 );
@@ -169,39 +177,42 @@ void setup() {
   struct rst_info * info = ESP.getResetInfoPtr();
   if ( info->reason != REASON_DEEP_SLEEP_AWAKE ) {
      for ( int i=10; i > 0; i-- ) {
-#ifdef DEBUG
-        Serial.printf( "Count down: %d\n", i );
-#endif
-        delay(1000);
+        delay(500);
      }
   }
-
+  
   if ( bme.begin( BME280_ADDR, SDA_PIN, SCL_PIN, 400000 ) ) {
-     if ( info->reason != REASON_DEEP_SLEEP_AWAKE ) {
 #ifdef DEBUG
-        Serial.println( F("BME280 OK") );
-        Serial.flush();
+     Serial.println( F("BME280 OK !!!") );
+     Serial.flush();
 #endif
-        read_sensor();
-        delay(10);
-     }
+     read_sensor();
+     delay(100);
      process();
   } 
   else {
 #ifdef DEBUG
-    Serial.println( F("BME280 FAILED !!!") );
-    Serial.flush();
+     Serial.println( F("BME280 FAILED !!!") );
+     Serial.flush();
 #endif
   }
   delay(10);
 
-  ESP.deepSleep( SLEEP_SEC );  // enter deep-sleep mode 
-                               // don't forget to connect the D0 (WAKE) pin to the /RST pin.
-  delay(1);
+  // enter deep-sleep mode if battery is provided.
+  if ( analogRead( A0 ) > 512 ) {
+     ESP.deepSleep( SLEEP_SEC );  
+     // don't forget to connect the D0 (WAKE) pin to the /RST pin.
+  }  
+  delay(10);
+
+  pinMode( BUILTIN_LED, OUTPUT );
 }
 
 void loop() {
-  // ...
+  digitalWrite( BUILTIN_LED, LOW ); // LED OFF
+  delay(100);
+  digitalWrite( BUILTIN_LED, HIGH ); // LED ON
+  delay(900);
 }
 ////////////////////////////////////////////////////////////////////////////////
 
